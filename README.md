@@ -88,8 +88,7 @@ curl -X POST http://localhost:8000/api/v1/query \
       "file": "fastapi/middleware/validators.py",
       "line": 45,
       "content": "class RequestValidationMiddleware..."
-    },
-    ...
+    }
   ],
   "confidence": 0.92
 }
