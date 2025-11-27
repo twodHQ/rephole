@@ -27,3 +27,142 @@ Unlike traditional code search tools, Rephole understands **semantic relationshi
 - **⚡ Fast Indexing** - Incremental updates via Git webhooks
 
 ---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Docker & Docker Compose
+- Git
+- An OpenAI API key
+
+### Installation
+
+**Option 1: Docker Compose**
+
+```bash
+# Clone the repository
+git clone https://github.com/twodHQ/rephole.git
+cd rephole
+
+# Configure your environment
+cp .env.example .env
+# Edit .env and add your OPENAI_API_KEY
+
+# Start Rephole
+docker-compose up -d
+
+# Rephole is now running at http://localhost:8000
+```
+
+---
+
+### Your First Query (60 seconds)
+
+```bash
+# 1. Ingest a repository
+curl -X POST http://localhost:8000/api/v1/ingest \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo_url": "https://github.com/fastapi/fastapi",
+    "branch": "master"
+  }'
+
+# 2. Wait for indexing (check status)
+curl http://localhost:8000/api/v1/status/fastapi
+
+# 3. Ask a question
+curl -X POST http://localhost:8000/api/v1/query \
+  -H "Content-Type: application/json" \
+  -d '{
+    "repo": "fastapi",
+    "question": "How do I add request validation middleware?"
+  }'
+```
+
+**Response:**
+```json
+{
+  "sources": [
+    {
+      "file": "fastapi/middleware/validators.py",
+      "line": 45,
+      "content": "class RequestValidationMiddleware..."
+    },
+    ...
+  ],
+  "confidence": 0.92
+}
+```
+
+---
+
+---
+
+## 📖 Core Concepts
+
+### Ingestion Pipeline
+
+```
+Repository → Clone → Parse → Chunk → Embed → Store → Index
+```
+
+Rephole automatically:
+- Clones your repository
+- Parses code files (supports 20+ languages)
+- Chunks code intelligently (function/class level)
+- Generates embeddings
+- Stores vectors
+- Indexes for fast retrieval
+
+### Query Flow
+
+```
+Question → Embed → Search → Retrieve → Return
+```
+
+When you query:
+- Your question is embedded using the same model
+- Semantic search finds relevant code chunks
+- Return top matches chunks
+
+---
+
+## 🔧 API Reference
+
+### TODO
+
+---
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │ HTTP REST API
+┌──────▼──────────────────────┐
+│    Rephole API Server       │
+│  ┌──────────────────────┐   │
+│  │  Ingestion Service   │   │
+│  └──────────┬───────────┘   │
+│             │               │
+│  ┌──────────▼───────────┐   │
+│  │   Vector Database    │   │
+│  │     (ChromaDB)       │   │
+│  └──────────┬───────────┘   │
+│             │               │
+│  ┌──────────▼───────────┐   │
+│  │   Query Service      │   │
+│  └──────────────────────┘   │
+└─────────────────────────────┘
+
+```
+
+---
+
+## 🛠️ Configuration
+
+### Environment Variables
+
+TODO
