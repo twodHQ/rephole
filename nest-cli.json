@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/api/src",
+  "monorepo": true,
+  "root": "apps/api",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/api/tsconfig.app.json"
+  },
+  "projects": {
+    "api": {
+      "type": "application",
+      "root": "apps/api",
+      "entryFile": "main",
+      "sourceRoot": "apps/api/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/api/tsconfig.app.json"
+      }
+    },
+    "background-worker": {
+      "type": "application",
+      "root": "apps/background-worker",
+      "entryFile": "main",
+      "sourceRoot": "apps/background-worker/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/background-worker/tsconfig.app.json"
+      }
+    },
+    "core": {
+      "type": "library",
+      "root": "libs/core",
+      "entryFile": "index",
+      "sourceRoot": "libs/core/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/core/tsconfig.lib.json"
+      }
+    },
+    "ai-foundation": {
+      "type": "library",
+      "root": "libs/ai-foundation",
+      "entryFile": "index",
+      "sourceRoot": "libs/ai-foundation/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ai-foundation/tsconfig.lib.json"
+      }
+    },
+    "knowledge-base": {
+      "type": "library",
+      "root": "libs/knowledge-base",
+      "entryFile": "index",
+      "sourceRoot": "libs/knowledge-base/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/knowledge-base/tsconfig.lib.json"
+      }
+    },
+    "shared-interfaces": {
+      "type": "library",
+      "root": "libs/shared-interfaces",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared-interfaces/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared-interfaces/tsconfig.lib.json"
+      }
+    },
+    "shared-entities": {
+      "type": "library",
+      "root": "libs/shared-entities",
+      "entryFile": "index",
+      "sourceRoot": "libs/shared-entities/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/shared-entities/tsconfig.lib.json"
+      }
+    },
+    "retrieval-common": {
+      "type": "library",
+      "root": "libs/retrieval-common",
+      "entryFile": "index",
+      "sourceRoot": "libs/retrieval-common/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/retrieval-common/tsconfig.lib.json"
+      }
+    },
+    "git": {
+      "type": "library",
+      "root": "libs/git",
+      "entryFile": "index",
+      "sourceRoot": "libs/git/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/git/tsconfig.lib.json"
+      }
+    },
+    "ingestion-file-rag": {
+      "type": "library",
+      "root": "libs/ingestion/file-rag",
+      "entryFile": "index",
+      "sourceRoot": "libs/ingestion/file-rag/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ingestion/file-rag/tsconfig.lib.json"
+      }
+    },
+    "ingestion-repo-rag": {
+      "type": "library",
+      "root": "libs/ingestion/repo-rag",
+      "entryFile": "index",
+      "sourceRoot": "libs/ingestion/repo-rag/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ingestion/repo-rag/tsconfig.lib.json"
+      }
+    },
+    "ingestion-repo-rag-producer": {
+      "type": "library",
+      "root": "libs/ingestion/repo-rag-producer",
+      "entryFile": "index",
+      "sourceRoot": "libs/ingestion/repo-rag-producer/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ingestion/repo-rag-producer/tsconfig.lib.json"
+      }
+    },
+    "ingestion-repo-rag-consumer": {
+      "type": "library",
+      "root": "libs/ingestion/repo-rag-consumer",
+      "entryFile": "index",
+      "sourceRoot": "libs/ingestion/repo-rag-consumer/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/ingestion/repo-rag-consumer/tsconfig.lib.json"
+      }
+    },
+    "agents-business-analyst": {
+      "type": "library",
+      "root": "libs/agents/business-analyst",
+      "entryFile": "index",
+      "sourceRoot": "libs/agents/business-analyst/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/agents/business-analyst/tsconfig.lib.json"
+      }
+    },
+    "agents-tech-writer": {
+      "type": "library",
+      "root": "libs/agents/tech-writer",
+      "entryFile": "index",
+      "sourceRoot": "libs/agents/tech-writer/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/agents/tech-writer/tsconfig.lib.json"
+      }
+    },
+    "agents-shared": {
+      "type": "library",
+      "root": "libs/agents/shared",
+      "entryFile": "index",
+      "sourceRoot": "libs/agents/shared/src",
+      "compilerOptions": {
+        "tsConfigPath": "libs/agents/shared/tsconfig.lib.json"
+      }
+    }
+  }
+}

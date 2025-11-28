@@ -1,0 +1,60 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false,
+    "paths": {
+      "@app/ai-core": [
+        "libs/ai-foundation/src"
+      ],
+      "@app/ai-core/*": [
+        "libs/ai-foundation/src/*"
+      ],
+      "@app/shared-entities": [
+        "libs/shared-entities/src"
+      ],
+      "@app/shared-entities/*": [
+        "libs/shared-entities/src/*"
+      ],
+      "@app/ingestion/repo-rag-producer": [
+        "libs/ingestion/repo-rag-producer/src"
+      ],
+      "@app/ingestion/repo-rag-producer/*": [
+        "libs/ingestion/repo-rag-producer/src/*"
+      ],
+      "@app/ingestion/repo-rag-consumer": [
+        "libs/ingestion/repo-rag-consumer/src"
+      ],
+      "@app/ingestion/repo-rag-consumer/*": [
+        "libs/ingestion/repo-rag-consumer/src/*"
+      ],
+      "@app/*": [
+        "libs/*/src"
+      ],
+      "@apps/*": [
+        "apps/*/src"
+      ],
+      "@libs/*": [
+        "libs/*/src"
+      ]
+    }
+  }
+}

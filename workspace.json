@@ -1,0 +1,197 @@
+{
+  "version": 2,
+  "projects": {
+    "api": {
+      "root": "apps/api",
+      "sourceRoot": "apps/api/src",
+      "projectType": "application",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:build",
+          "options": {
+            "outputPath": "dist/apps/api",
+            "main": "apps/api/src/main.ts",
+            "tsConfig": "apps/api/tsconfig.app.json"
+          }
+        },
+        "serve": {
+          "executor": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "api:build"
+          }
+        }
+      }
+    },
+    "background-worker": {
+      "root": "apps/background-worker",
+      "sourceRoot": "apps/background-worker/src",
+      "projectType": "application",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:build",
+          "options": {
+            "outputPath": "dist/apps/background-worker",
+            "main": "apps/background-worker/src/main.ts",
+            "tsConfig": "apps/background-worker/tsconfig.app.json"
+          }
+        },
+        "serve": {
+          "executor": "@nrwl/node:execute",
+          "options": {
+            "buildTarget": "background-worker:build"
+          }
+        }
+      }
+    },
+    "core": {
+      "root": "libs/core",
+      "sourceRoot": "libs/core/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/core",
+            "tsConfig": "libs/core/tsconfig.lib.json",
+            "main": "libs/core/src/index.ts"
+          }
+        }
+      }
+    },
+    "ai-foundation": {
+      "root": "libs/ai-foundation",
+      "sourceRoot": "libs/ai-foundation/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/ai-foundation",
+            "tsConfig": "libs/ai-foundation/tsconfig.lib.json",
+            "main": "libs/ai-foundation/src/index.ts"
+          }
+        }
+      }
+    },
+    "knowledge-base": {
+      "root": "libs/knowledge-base",
+      "sourceRoot": "libs/knowledge-base/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/knowledge-base",
+            "tsConfig": "libs/knowledge-base/tsconfig.lib.json",
+            "main": "libs/knowledge-base/src/index.ts"
+          }
+        }
+      }
+    },
+    "shared-interfaces": {
+      "root": "libs/shared-interfaces",
+      "sourceRoot": "libs/shared-interfaces/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/shared-interfaces",
+            "tsConfig": "libs/shared-interfaces/tsconfig.lib.json",
+            "main": "libs/shared-interfaces/src/index.ts"
+          }
+        }
+      }
+    },
+    "git": {
+      "root": "libs/git",
+      "sourceRoot": "libs/git/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/git",
+            "tsConfig": "libs/git/tsconfig.lib.json",
+            "main": "libs/git/src/index.ts"
+          }
+        }
+      }
+    },
+    "ingestion-file-rag": {
+      "root": "libs/ingestion/file-rag",
+      "sourceRoot": "libs/ingestion/file-rag/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/ingestion/file-rag",
+            "tsConfig": "libs/ingestion/file-rag/tsconfig.lib.json",
+            "main": "libs/ingestion/file-rag/src/index.ts"
+          }
+        }
+      }
+    },
+    "ingestion-repo-rag": {
+      "root": "libs/ingestion/repo-rag",
+      "sourceRoot": "libs/ingestion/repo-rag/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/ingestion/repo-rag",
+            "tsConfig": "libs/ingestion/repo-rag/tsconfig.lib.json",
+            "main": "libs/ingestion/repo-rag/src/index.ts"
+          }
+        }
+      }
+    },
+    "agents-business-analyst": {
+      "root": "libs/agents/business-analyst",
+      "sourceRoot": "libs/agents/business-analyst/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/agents/business-analyst",
+            "tsConfig": "libs/agents/business-analyst/tsconfig.lib.json",
+            "main": "libs/agents/business-analyst/src/index.ts"
+          }
+        }
+      }
+    },
+    "agents-tech-writer": {
+      "root": "libs/agents/tech-writer",
+      "sourceRoot": "libs/agents/tech-writer/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/agents/tech-writer",
+            "tsConfig": "libs/agents/tech-writer/tsconfig.lib.json",
+            "main": "libs/agents/tech-writer/src/index.ts"
+          }
+        }
+      }
+    },
+    "agents-shared": {
+      "root": "libs/agents/shared",
+      "sourceRoot": "libs/agents/shared/src",
+      "projectType": "library",
+      "targets": {
+        "build": {
+          "executor": "@nrwl/node:package",
+          "options": {
+            "outputPath": "dist/libs/agents/shared",
+            "tsConfig": "libs/agents/shared/tsconfig.lib.json",
+            "main": "libs/agents/shared/src/index.ts"
+          }
+        }
+      }
+    }
+  }
+}
