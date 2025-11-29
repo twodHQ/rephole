@@ -52,7 +52,7 @@ export class IngestionController {
       publicRepo: {
         summary: 'Public repository',
         value: {
-          repoUrl: 'https://github.com/ghostfolio/ghostfolio.git',
+          repoUrl: 'https://github.com/twodHQ/rephole.git',
           ref: 'main',
         },
       },

@@ -34,7 +34,7 @@ export class JobController {
                 state: 'completed',
                 progress: 100,
                 data: {
-                    repoUrl: 'https://github.com/ghostfolio/ghostfolio.git',
+                    repoUrl: 'https://github.com/twodHQ/rephole.git',
                     ref: 'main',
                 },
             },

@@ -15,7 +15,7 @@ import {
 export class RepoIngestionDto {
   @ApiProperty({
     description: 'Git repository HTTPS URL',
-    example: 'https://github.com/ghostfolio/ghostfolio.git',
+    example: 'https://github.com/twodHQ/rephole.git',
     required: true,
   })
   @IsUrl({
@@ -90,7 +90,7 @@ export class RepoIngestionResponseDto {
 
   @ApiProperty({
     description: 'Repository URL being processed',
-    example: 'https://github.com/ghostfolio/ghostfolio.git',
+    example: 'https://github.com/twodHQ/rephole.git',
   })
   repoUrl: string;
 
