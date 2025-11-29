@@ -293,42 +293,6 @@ POST /jobs/retry/all
 
 Rephole uses a **producer-consumer architecture** with two separate services for optimal performance and scalability:
 
-### System Overview
-
-```mermaid
-graph TB
-    Client[HTTP Client] -->|POST /ingestions/repository| API
-    Client -->|GET /jobs/job/:id| API
-    Client -->|POST /queries/search| API
-    
-    subgraph API["🚀 API Server (Port 3000)"]
-        A[REST Controllers] --> IS[IngestionService]
-        A --> QS[QueryService]
-        IS --> RIS[RepoIngestionService]
-        RIS -->|enqueue job| Q
-    end
-    
-    subgraph Queue["📮 Redis Queue (BullMQ)"]
-        Q[(repo-ingestion)]
-    end
-    
-    subgraph Worker["⚙️ Background Worker (Port 3002)"]
-        Q -->|consume job| RUP[RepoUpdateProcessor]
-        RUP --> Git[GitService]
-        RUP --> AST[AstParser]
-        RUP --> AI[AI Services]
-        AI --> Embed[Embeddings]
-        RUP --> VDB[(Vector DB<br/>ChromaDB)]
-        RUP --> PG[(PostgreSQL)]
-    end
-    
-    QS --> VDB
-    
-    style API fill:#e3f2fd,stroke:#1976d2,stroke-width:3px
-    style Worker fill:#fff3e0,stroke:#f57c00,stroke-width:3px
-    style Queue fill:#ffebee,stroke:#c62828,stroke-width:2px
-```
-
 ### Architecture Components
 
 #### 1. **API Server** (Producer)
