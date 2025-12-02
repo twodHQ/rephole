@@ -31,7 +31,7 @@
     "test": "jest --config jest.config.json --no-cache",
     "test:watch": "jest --config jest.config.json --watch",
     "test:cov": "jest --config jest.config.json --coverage",
-    "test:debug": "node --config jest.config.json --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
