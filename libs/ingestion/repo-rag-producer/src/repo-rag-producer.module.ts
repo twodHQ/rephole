@@ -5,6 +5,8 @@ import {GitModule} from '@app/git';
 import {KnowledgeBaseModule} from '@app/knowledge-base';
 import {SharedEntitiesModule} from '@app/shared-entities';
 import {RepoIngestionService,} from '@app/ingestion/repo-rag';
+import { BullBoardModule } from '@bull-board/nestjs';
+import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
 
 /**
  * RepoRagProducerModule
@@ -27,6 +29,11 @@ import {RepoIngestionService,} from '@app/ingestion/repo-rag';
     imports: [
         // Register queue for producers (allows @InjectQueue)
         BullModule.registerQueue({name: 'repo-ingestion'}),
+
+        BullBoardModule.forFeature({
+          name: 'repo-ingestion',
+          adapter: BullMQAdapter
+        }),
 
         // Dependencies for producer services
         SharedEntitiesModule, // Provides RepoStateEntity

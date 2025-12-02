@@ -35,6 +35,9 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@bull-board/api": "^6.14.2",
+    "@bull-board/express": "^6.14.2",
+    "@bull-board/nestjs": "^6.14.2",
     "@chroma-core/default-embed": "^0.1.9",
     "@keyv/redis": "^5.1.4",
     "@nestjs/bullmq": "^11.0.4",
