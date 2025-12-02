@@ -67,7 +67,6 @@ export class AstSplitterService implements OnModuleInit {
     this.logger.debug(`Found ${captures.length} total captures`);
 
     const chunks: CodeChunk[] = [];
-    const processedRanges = new Set<string>(); // To avoid duplicates
 
     const blockCaptures = captures.filter((c) => c.name === 'block');
     this.logger.debug(
