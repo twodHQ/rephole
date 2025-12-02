@@ -4,6 +4,9 @@
 
 ---
 
+## Our Sponsor
+[Artiforge](https://artiforge.ai) is proud to sponsor the development of Rephole.
+
 ## 🎯 What is Rephole?
 
 Rephole is an open-source REST API that ingests your codebase and creates a specialized RAG (Retrieval-Augmented Generation) system for intelligent code search, and retrievial.
