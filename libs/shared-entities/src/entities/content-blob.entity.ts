@@ -26,8 +26,8 @@ export class ContentBlobEntity {
    *
    * @example "rephole" (from https://github.com/twodHQ/rephole.git)
    */
-  @Column({ type: 'varchar', length: 255, nullable: true })
-  repoId: string | null;
+  @PrimaryColumn()
+  repoId: string;
 
   /**
    * The full file content stored as text.

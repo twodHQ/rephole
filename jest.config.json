@@ -20,6 +20,11 @@
     "repos",
     "dist"
   ],
+  "testPathIgnorePatterns": [
+    "node_modules",
+    "repos",
+    "dist"
+  ],
   "detectOpenHandles": true,
   "coverageDirectory": "./coverage",
   "testEnvironment": "node",
