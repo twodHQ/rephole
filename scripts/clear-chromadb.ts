@@ -19,7 +19,7 @@ async function clearChromaDB() {
     console.log('✅ Connected to ChromaDB at:', process.env.CHROMA_URL || 'http://localhost:8000');
 
     // Get collection
-    const collectionName = process.env.CHROMA_COLLECTION_NAME || 'br-ai-n-collection';
+    const collectionName = process.env.CHROMA_COLLECTION_NAME || 'rephole-collection';
     console.log(`📦 Checking collection: ${collectionName}\n`);
 
     let collection;

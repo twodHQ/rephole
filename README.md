@@ -49,10 +49,15 @@ cd rephole
 cp .env.example .env
 # Edit .env and add your OPENAI_API_KEY
 
-# Start Rephole
+# Start Rephole services
 docker-compose up -d
 
+# Start the API server
+pnpm install
+pnpm start:all
+
 # Rephole is now running at http://localhost:3000
+# Worker now running in background on port 3002
 ```
 
 ---
