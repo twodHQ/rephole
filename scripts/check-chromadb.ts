@@ -22,7 +22,7 @@ async function checkChromaDB() {
 
     // Get or create collection
     const collectionName =
-      process.env.CHROMA_COLLECTION_NAME || 'br-ai-n-collection';
+      process.env.CHROMA_COLLECTION_NAME || 'rephole-collection';
     console.log(`📦 Checking collection: ${collectionName}\n`);
 
     let collection;
