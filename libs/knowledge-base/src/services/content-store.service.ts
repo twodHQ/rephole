@@ -39,7 +39,7 @@ export class ContentStoreService {
   async saveParent(
     id: string,
     content: string,
-    repoId: string,
+    repoId: string = 'no-repo',
     metadata?: Record<string, any>,
   ): Promise<void> {
     try {
