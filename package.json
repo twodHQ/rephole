@@ -28,9 +28,9 @@
     "start:worker:prod": "node dist/apps/background-worker/main",
     "start:worker:prod:mem": "node --max-old-space-size=8192 --expose-gc dist/apps/background-worker/main",
     "lint": "eslint \"{apps,libs,test}/**/*.ts\" --fix",
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
+    "test": "jest --config jest.config.json --no-cache",
+    "test:watch": "jest --config jest.config.json --watch",
+    "test:cov": "jest --config jest.config.json --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
@@ -100,32 +100,5 @@
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.7.3",
     "typescript-eslint": "^8.20.0"
-  },
-  "jest": {
-    "moduleFileExtensions": [
-      "js",
-      "json",
-      "ts"
-    ],
-    "rootDir": ".",
-    "testRegex": ".*\\.spec\\.ts$",
-    "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
-    },
-    "collectCoverageFrom": [
-      "apps/**/*.(t|j)s",
-      "libs/**/*.(t|j)s"
-    ],
-    "detectOpenHandles": true,
-    "coverageDirectory": "./coverage",
-    "testEnvironment": "node",
-    "moduleNameMapper": {
-      "^@app/ai-core$": "<rootDir>/libs/ai-foundation/src",
-      "^@app/ai-core/(.*)$": "<rootDir>/libs/ai-foundation/src/$1",
-      "^@app/shared-entities$": "<rootDir>/libs/shared-entities/src",
-      "^@app/shared-entities/(.*)$": "<rootDir>/libs/shared-entities/src/$1",
-      "^@app/(.*)$": "<rootDir>/libs/$1/src",
-      "^@libs/(.*)$": "<rootDir>/libs/$1/src"
-    }
   }
 }

@@ -50,20 +50,40 @@ export class IngestionController {
     type: RepoIngestionDto,
     examples: {
       publicRepo: {
-        summary: 'Public repository',
+        summary: 'Public repository (minimal)',
+        description: 'Basic ingestion with auto-deduced repoId',
         value: {
           repoUrl: 'https://github.com/twodHQ/rephole.git',
           ref: 'main',
         },
       },
+      publicRepoWithMeta: {
+        summary: 'Public repository with metadata',
+        description:
+          'Ingestion with custom metadata that will be attached to all chunks',
+        value: {
+          repoUrl: 'https://github.com/twodHQ/rephole.git',
+          ref: 'main',
+          meta: {
+            team: 'backend',
+            project: 'rephole',
+            environment: 'production',
+          },
+        },
+      },
       privateRepo: {
-        summary: 'Private repository with token',
+        summary: 'Private repository with token and metadata',
+        description: 'Full configuration with authentication and metadata',
         value: {
           repoUrl: 'https://github.com/myorg/private-repo.git',
           ref: 'develop',
           token: 'ghp_xxxxxxxxxxxxxxxxxxxx',
           userId: 'user-123',
-          repoId: 'my-private-repo',
+          meta: {
+            team: 'frontend',
+            sprint: 42,
+            priority: 'high',
+          },
         },
       },
     },

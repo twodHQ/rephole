@@ -1,0 +1,34 @@
+{
+  "moduleFileExtensions": [
+    "js",
+    "json",
+    "ts"
+  ],
+  "rootDir": ".",
+  "testRegex": ".\\.spec\\.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+
+  "collectCoverageFrom": [
+    "apps/**/*.(t|j)s",
+    "libs/**/*.(t|j)s"
+  ],
+  "coveragePathIgnorePatterns": [
+    "node_modules",
+    "test",
+    "repos",
+    "dist"
+  ],
+  "detectOpenHandles": true,
+  "coverageDirectory": "./coverage",
+  "testEnvironment": "node",
+  "moduleNameMapper": {
+    "^@app/ai-core$": "<rootDir>/libs/ai-foundation/src",
+    "^@app/ai-core/(.*)$": "<rootDir>/libs/ai-foundation/src/$1",
+    "^@app/shared-entities$": "<rootDir>/libs/shared-entities/src",
+    "^@app/shared-entities/(.*)$": "<rootDir>/libs/shared-entities/src/$1",
+    "^@app/(.*)$": "<rootDir>/libs/$1/src",
+    "^@libs/(.*)$": "<rootDir>/libs/$1/src"
+  }
+}

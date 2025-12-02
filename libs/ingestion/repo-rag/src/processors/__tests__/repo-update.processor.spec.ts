@@ -6,7 +6,6 @@ import { GitService } from '@app/git';
 import { EmbeddingsService } from '@app/ai-core';
 import { ContentStoreService, VectorStoreService } from '@app/knowledge-base';
 import { AstSplitterService } from '@app/ingestion/ast-parser';
-import { DocGeneratorService } from '../../services';
 import { RepoStateEntity } from '../../entities';
 import type { RepositoryMetadata } from '@app/shared-interfaces';
 
@@ -28,7 +27,6 @@ describe('RepoUpdateProcessor - Metadata Alignment', () => {
     embedDocuments: jest.fn(),
   };
 
-  const mockDocGenerator = {};
   const mockContentStore = {
     saveParent: jest.fn(),
   };
@@ -53,7 +51,6 @@ describe('RepoUpdateProcessor - Metadata Alignment', () => {
         { provide: GitService, useValue: mockGitService },
         { provide: EmbeddingsService, useValue: mockEmbeddingsService },
         { provide: VectorStoreService, useValue: mockVectorStore },
-        { provide: DocGeneratorService, useValue: mockDocGenerator },
         {
           provide: getRepositoryToken(RepoStateEntity),
           useValue: mockRepoStateRepo,
@@ -305,6 +302,279 @@ describe('RepoUpdateProcessor - Metadata Alignment', () => {
 
         // Verify sequential chunk indices
         expect(capturedChunkIndices).toEqual([0, 1, 2]);
+      } finally {
+        require('fs').readFileSync = originalReadFileSync;
+      }
+    });
+  });
+
+  describe('Meta Sanitization and Merging', () => {
+    it('should merge custom meta with chunk metadata', async () => {
+      const mockState: RepoStateEntity = {
+        id: 'repo_meta_test',
+        repoUrl: 'https://github.com/test/repo.git',
+        localPath: '/path/to/repo',
+        lastProcessedCommit: 'abc123',
+        fileSignatures: {},
+      };
+
+      mockRepoStateRepo.findOneBy.mockResolvedValue(mockState);
+      mockGitService.getCurrentCommit.mockResolvedValue('def456');
+      mockGitService.getChangedFiles.mockResolvedValue({
+        added: ['src/test.ts'],
+        modified: [],
+        deleted: [],
+      });
+
+      mockAstSplitter.split.mockReturnValue([
+        {
+          id: 'src/test.ts:testFunc:function:L1',
+          content: 'function testFunc() {}',
+          type: 'function',
+          startLine: 1,
+          endLine: 3,
+        },
+      ]);
+
+      mockEmbeddingsService.embedDocuments.mockResolvedValue([
+        new Array(1536).fill(0.1),
+      ]);
+
+      let capturedMetadata: any;
+      mockVectorStore.upsert.mockImplementation((records) => {
+        if (records.length > 0) {
+          capturedMetadata = records[0].metadata;
+        }
+        return Promise.resolve();
+      });
+
+      const originalReadFileSync = require('fs').readFileSync;
+      require('fs').readFileSync = jest.fn().mockReturnValue('file content');
+
+      try {
+        await processor.process({
+          id: 'job_123',
+          data: {
+            repoUrl: 'https://github.com/test/repo.git',
+            repoId: 'repo_meta_test',
+            meta: {
+              team: 'backend',
+              project: 'api',
+              priority: 1,
+            },
+          },
+        } as any);
+
+        expect(capturedMetadata).toBeDefined();
+        // Custom meta should be merged
+        expect(capturedMetadata.team).toBe('backend');
+        expect(capturedMetadata.project).toBe('api');
+        expect(capturedMetadata.priority).toBe(1);
+        // Base metadata should still exist
+        expect(capturedMetadata.category).toBe('repository');
+        expect(capturedMetadata.filePath).toBe('src/test.ts');
+        expect(capturedMetadata.repoId).toBe('repo_meta_test');
+      } finally {
+        require('fs').readFileSync = originalReadFileSync;
+      }
+    });
+
+    it('should filter out non-primitive meta values', async () => {
+      const mockState: RepoStateEntity = {
+        id: 'repo_filter_test',
+        repoUrl: 'https://github.com/test/repo.git',
+        localPath: '/path/to/repo',
+        lastProcessedCommit: 'abc123',
+        fileSignatures: {},
+      };
+
+      mockRepoStateRepo.findOneBy.mockResolvedValue(mockState);
+      mockGitService.getCurrentCommit.mockResolvedValue('def456');
+      mockGitService.getChangedFiles.mockResolvedValue({
+        added: ['src/test.ts'],
+        modified: [],
+        deleted: [],
+      });
+
+      mockAstSplitter.split.mockReturnValue([
+        {
+          id: 'src/test.ts:testFunc:function:L1',
+          content: 'function testFunc() {}',
+          type: 'function',
+          startLine: 1,
+          endLine: 3,
+        },
+      ]);
+
+      mockEmbeddingsService.embedDocuments.mockResolvedValue([
+        new Array(1536).fill(0.1),
+      ]);
+
+      let capturedMetadata: any;
+      mockVectorStore.upsert.mockImplementation((records) => {
+        if (records.length > 0) {
+          capturedMetadata = records[0].metadata;
+        }
+        return Promise.resolve();
+      });
+
+      const originalReadFileSync = require('fs').readFileSync;
+      require('fs').readFileSync = jest.fn().mockReturnValue('file content');
+
+      try {
+        await processor.process({
+          id: 'job_123',
+          data: {
+            repoUrl: 'https://github.com/test/repo.git',
+            repoId: 'repo_filter_test',
+            meta: {
+              validString: 'value',
+              validNumber: 42,
+              validBoolean: true,
+              invalidObject: { nested: 'value' }, // Should be filtered
+              invalidArray: [1, 2, 3], // Should be filtered
+            },
+          },
+        } as any);
+
+        expect(capturedMetadata).toBeDefined();
+        // Valid primitives should be included
+        expect(capturedMetadata.validString).toBe('value');
+        expect(capturedMetadata.validNumber).toBe(42);
+        expect(capturedMetadata.validBoolean).toBe(true);
+        // Non-primitives should be filtered out
+        expect(capturedMetadata.invalidObject).toBeUndefined();
+        expect(capturedMetadata.invalidArray).toBeUndefined();
+      } finally {
+        require('fs').readFileSync = originalReadFileSync;
+      }
+    });
+
+    it('should not allow meta to override reserved fields', async () => {
+      const mockState: RepoStateEntity = {
+        id: 'repo_reserved_test',
+        repoUrl: 'https://github.com/test/repo.git',
+        localPath: '/path/to/repo',
+        lastProcessedCommit: 'abc123',
+        fileSignatures: {},
+      };
+
+      mockRepoStateRepo.findOneBy.mockResolvedValue(mockState);
+      mockGitService.getCurrentCommit.mockResolvedValue('def456');
+      mockGitService.getChangedFiles.mockResolvedValue({
+        added: ['src/test.ts'],
+        modified: [],
+        deleted: [],
+      });
+
+      mockAstSplitter.split.mockReturnValue([
+        {
+          id: 'src/test.ts:testFunc:function:L1',
+          content: 'function testFunc() {}',
+          type: 'function',
+          startLine: 1,
+          endLine: 3,
+        },
+      ]);
+
+      mockEmbeddingsService.embedDocuments.mockResolvedValue([
+        new Array(1536).fill(0.1),
+      ]);
+
+      let capturedMetadata: any;
+      mockVectorStore.upsert.mockImplementation((records) => {
+        if (records.length > 0) {
+          capturedMetadata = records[0].metadata;
+        }
+        return Promise.resolve();
+      });
+
+      const originalReadFileSync = require('fs').readFileSync;
+      require('fs').readFileSync = jest.fn().mockReturnValue('file content');
+
+      try {
+        await processor.process({
+          id: 'job_123',
+          data: {
+            repoUrl: 'https://github.com/test/repo.git',
+            repoId: 'repo_reserved_test',
+            meta: {
+              // Try to override reserved fields
+              category: 'hacked',
+              id: 'hacked-id',
+              repositoryId: 'hacked-repo',
+              // Valid custom field
+              customField: 'allowed',
+            },
+          },
+        } as any);
+
+        expect(capturedMetadata).toBeDefined();
+        // Reserved fields should NOT be overwritten
+        expect(capturedMetadata.category).toBe('repository');
+        expect(capturedMetadata.id).toBe('src/test.ts:testFunc:function:L1');
+        expect(capturedMetadata.repositoryId).toBe('repo_reserved_test');
+        // Custom field should still work
+        expect(capturedMetadata.customField).toBe('allowed');
+      } finally {
+        require('fs').readFileSync = originalReadFileSync;
+      }
+    });
+
+    it('should use userId from job data', async () => {
+      const mockState: RepoStateEntity = {
+        id: 'repo_user_test',
+        repoUrl: 'https://github.com/test/repo.git',
+        localPath: '/path/to/repo',
+        lastProcessedCommit: 'abc123',
+        fileSignatures: {},
+      };
+
+      mockRepoStateRepo.findOneBy.mockResolvedValue(mockState);
+      mockGitService.getCurrentCommit.mockResolvedValue('def456');
+      mockGitService.getChangedFiles.mockResolvedValue({
+        added: ['src/test.ts'],
+        modified: [],
+        deleted: [],
+      });
+
+      mockAstSplitter.split.mockReturnValue([
+        {
+          id: 'src/test.ts:testFunc:function:L1',
+          content: 'function testFunc() {}',
+          type: 'function',
+          startLine: 1,
+          endLine: 3,
+        },
+      ]);
+
+      mockEmbeddingsService.embedDocuments.mockResolvedValue([
+        new Array(1536).fill(0.1),
+      ]);
+
+      let capturedMetadata: any;
+      mockVectorStore.upsert.mockImplementation((records) => {
+        if (records.length > 0) {
+          capturedMetadata = records[0].metadata;
+        }
+        return Promise.resolve();
+      });
+
+      const originalReadFileSync = require('fs').readFileSync;
+      require('fs').readFileSync = jest.fn().mockReturnValue('file content');
+
+      try {
+        await processor.process({
+          id: 'job_123',
+          data: {
+            repoUrl: 'https://github.com/test/repo.git',
+            repoId: 'repo_user_test',
+            userId: 'user-abc-123',
+          },
+        } as any);
+
+        expect(capturedMetadata).toBeDefined();
+        expect(capturedMetadata.userId).toBe('user-abc-123');
       } finally {
         require('fs').readFileSync = originalReadFileSync;
       }

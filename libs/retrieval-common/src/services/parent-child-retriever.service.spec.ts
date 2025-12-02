@@ -1,5 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ParentChildRetrieverService } from './parent-child-retriever.service';
+import {
+  ParentChildRetrieverService,
+  RetrievedChunk,
+} from './parent-child-retriever.service';
 import { VectorStoreService, ContentStoreService } from '@app/knowledge-base';
 
 describe('ParentChildRetrieverService', () => {
@@ -13,14 +16,14 @@ describe('ParentChildRetrieverService', () => {
         {
           id: 'chunk-1',
           content: 'Child content',
-          metadata: { parentId: 'parent-1' },
+          metadata: { id: 'chunk-1', parentId: 'parent-1', repoId: 'my-repo' },
           score: 0.9,
           vector: [0.1, 0.2, 0.3],
         },
         {
           id: 'chunk-2',
           content: 'Child content 2',
-          metadata: { parentId: 'parent-1' }, // Same parent
+          metadata: { id: 'chunk-2', parentId: 'parent-1', repoId: 'my-repo' }, // Same parent
           score: 0.8,
           vector: [0.2, 0.3, 0.4],
         },
@@ -28,11 +31,14 @@ describe('ParentChildRetrieverService', () => {
     } as any;
 
     mockContentStore = {
-      getParents: jest
-        .fn()
-        .mockResolvedValue([
-          { id: 'parent-1', content: 'Full parent document content' },
-        ]),
+      getParents: jest.fn().mockResolvedValue([
+        {
+          id: 'parent-1',
+          content: 'Full parent document content',
+          repoId: 'my-repo',
+          metadata: { team: 'backend' },
+        },
+      ]),
     } as any;
 
     const module: TestingModule = await Test.createTestingModule({
@@ -74,10 +80,29 @@ describe('ParentChildRetrieverService', () => {
       expect(mockVectorStore.similaritySearch).toHaveBeenCalledWith(
         queryVector,
         15, // k * 3
+        undefined, // No metadata filters
       );
       expect(mockContentStore.getParents).toHaveBeenCalledWith(['parent-1']);
       expect(results).toHaveLength(1);
-      expect(results[0]).toContain('Full parent document content');
+
+      // Check result structure
+      const result = results[0];
+      expect(result.id).toBe('parent-1');
+      expect(result.content).toBe('Full parent document content');
+      expect(result.repoId).toBe('my-repo');
+      expect(result.metadata).toEqual({ team: 'backend' });
+    });
+
+    it('should retrieve with metadata filters', async () => {
+      const queryVector = [0.1, 0.2, 0.3];
+      const filters = { repoId: 'my-repo', team: 'backend' };
+      await service.retrieve(queryVector, 5, filters);
+
+      expect(mockVectorStore.similaritySearch).toHaveBeenCalledWith(
+        queryVector,
+        15, // k * 3
+        filters,
+      );
     });
 
     it('should deduplicate parent IDs', async () => {
@@ -94,7 +119,7 @@ describe('ParentChildRetrieverService', () => {
         {
           id: 'chunk-orphan',
           content: 'Orphan chunk content',
-          metadata: {}, // No parentId
+          metadata: { id: 'chunk-orphan', repoId: 'orphan-repo' }, // No parentId
           score: 0.9,
           vector: [0.1, 0.2, 0.3],
         },
@@ -104,7 +129,26 @@ describe('ParentChildRetrieverService', () => {
       const results = await service.retrieve(queryVector, 5);
 
       expect(mockContentStore.getParents).not.toHaveBeenCalled();
-      expect(results).toEqual(['Orphan chunk content']);
+      expect(results).toHaveLength(1);
+
+      // Check orphan chunk structure
+      const result = results[0];
+      expect(result.id).toBe('chunk-orphan');
+      expect(result.content).toBe('Orphan chunk content');
+      expect(result.repoId).toBe('orphan-repo');
+    });
+
+    it('should return structured RetrievedChunk objects', async () => {
+      const queryVector = [0.1, 0.2, 0.3];
+      const results: RetrievedChunk[] = await service.retrieve(queryVector, 5);
+
+      // Verify the return type structure
+      results.forEach((chunk) => {
+        expect(chunk).toHaveProperty('id');
+        expect(chunk).toHaveProperty('content');
+        expect(chunk).toHaveProperty('repoId');
+        expect(chunk).toHaveProperty('metadata');
+      });
     });
   });
 });

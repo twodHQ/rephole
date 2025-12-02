@@ -8,8 +8,8 @@ import { IngestionController, IngestionService } from './ingestions';
 import { JobController, JobService } from './jobs';
 import { HealthController } from './health.controller';
 import { QueryController, QueryService } from './queries';
-import { BullBoardModule } from "@bull-board/nestjs";
-import { ExpressAdapter } from "@bull-board/express";
+import { BullBoardModule } from '@bull-board/nestjs';
+import { ExpressAdapter } from '@bull-board/express';
 /**
  * ApiServerModule
  *
@@ -40,7 +40,7 @@ import { ExpressAdapter } from "@bull-board/express";
 
     BullBoardModule.forRoot({
       route: '/queues',
-      adapter: ExpressAdapter // Or FastifyAdapter from `@bull-board/fastify`
+      adapter: ExpressAdapter, // Or FastifyAdapter from `@bull-board/fastify`
     }),
 
     // 3. Feature Modules (PRODUCER ONLY - no processors!)

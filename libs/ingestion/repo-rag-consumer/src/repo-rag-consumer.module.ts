@@ -1,11 +1,11 @@
-import {Module} from '@nestjs/common';
-import {BullModule} from '@nestjs/bullmq';
-import {AiFoundationModule} from '@app/ai-core';
-import {GitModule} from '@app/git';
-import {AstParserModule} from '@app/ingestion/ast-parser';
-import {KnowledgeBaseModule} from '@app/knowledge-base';
-import {SharedEntitiesModule} from '@app/shared-entities';
-import {RepoUpdateProcessor,} from '@app/ingestion/repo-rag';
+import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { AiFoundationModule } from '@app/ai-core';
+import { GitModule } from '@app/git';
+import { AstParserModule } from '@app/ingestion/ast-parser';
+import { KnowledgeBaseModule } from '@app/knowledge-base';
+import { SharedEntitiesModule } from '@app/shared-entities';
+import { RepoUpdateProcessor } from '@app/ingestion/repo-rag';
 
 /**
  * RepoRagConsumerModule
@@ -26,23 +26,22 @@ import {RepoUpdateProcessor,} from '@app/ingestion/repo-rag';
  * This module should ONLY be imported by the background worker, never by the API.
  */
 @Module({
-    imports: [
-        // Register queue for consumers (allows processor to connect)
-        BullModule.registerQueue({name: 'repo-ingestion'}),
+  imports: [
+    // Register queue for consumers (allows processor to connect)
+    BullModule.registerQueue({ name: 'repo-ingestion' }),
 
-        // Dependencies for processor
-        SharedEntitiesModule, // Provides RepoStateEntity repository
-        AiFoundationModule, // Embeddings service
-        KnowledgeBaseModule, // Vector and content stores
-        GitModule, // Git operations
-        AstParserModule, // Code parsing
-    ],
-    providers: [
-        RepoUpdateProcessor, // Consumer: processes jobs from queue
-    ],
-    exports: [
-        RepoUpdateProcessor, // Exported for testing
-    ],
+    // Dependencies for processor
+    SharedEntitiesModule, // Provides RepoStateEntity repository
+    AiFoundationModule, // Embeddings service
+    KnowledgeBaseModule, // Vector and content stores
+    GitModule, // Git operations
+    AstParserModule, // Code parsing
+  ],
+  providers: [
+    RepoUpdateProcessor, // Consumer: processes jobs from queue
+  ],
+  exports: [
+    RepoUpdateProcessor, // Exported for testing
+  ],
 })
-export class RepoRagConsumerModule {
-}
+export class RepoRagConsumerModule {}
