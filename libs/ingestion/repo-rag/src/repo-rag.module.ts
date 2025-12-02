@@ -1,12 +1,12 @@
-import {Module} from '@nestjs/common';
-import {BullModule} from '@nestjs/bullmq';
-import {AiFoundationModule} from '@app/ai-core';
-import {GitModule} from '@app/git';
-import {AstParserModule} from '@app/ingestion/ast-parser';
-import {KnowledgeBaseModule} from '@app/knowledge-base';
-import {SharedEntitiesModule} from '@app/shared-entities';
-import {RepoIngestionService} from './services';
-import {RepoUpdateProcessor} from './processors';
+import { Module } from '@nestjs/common';
+import { BullModule } from '@nestjs/bullmq';
+import { AiFoundationModule } from '@app/ai-core';
+import { GitModule } from '@app/git';
+import { AstParserModule } from '@app/ingestion/ast-parser';
+import { KnowledgeBaseModule } from '@app/knowledge-base';
+import { SharedEntitiesModule } from '@app/shared-entities';
+import { RepoIngestionService } from './services';
+import { RepoUpdateProcessor } from './processors';
 
 /**
  * RepoRagModule
@@ -29,22 +29,18 @@ import {RepoUpdateProcessor} from './processors';
  * - TypeORM: Repository state persistence
  */
 @Module({
-    imports: [
-        BullModule.registerQueue({name: 'repo-ingestion'}),
-        SharedEntitiesModule, // Provides RepoStateEntity repository
-        AiFoundationModule,
-        KnowledgeBaseModule, // No forwardRef needed after refactoring!
-        GitModule,
-        AstParserModule,
-    ],
-    providers: [
-        RepoIngestionService, // Producer: Triggers a repo sync
-        RepoUpdateProcessor, // Consumer: Clones git, summarizes code
-    ],
-    exports: [
-        RepoIngestionService,
-        RepoUpdateProcessor,
-    ],
+  imports: [
+    BullModule.registerQueue({ name: 'repo-ingestion' }),
+    SharedEntitiesModule, // Provides RepoStateEntity repository
+    AiFoundationModule,
+    KnowledgeBaseModule, // No forwardRef needed after refactoring!
+    GitModule,
+    AstParserModule,
+  ],
+  providers: [
+    RepoIngestionService, // Producer: Triggers a repo sync
+    RepoUpdateProcessor, // Consumer: Clones git, summarizes code
+  ],
+  exports: [RepoIngestionService, RepoUpdateProcessor],
 })
-export class RepoRagModule {
-}
+export class RepoRagModule {}

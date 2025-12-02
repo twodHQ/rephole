@@ -1,6 +1,20 @@
-import {Injectable, Logger} from '@nestjs/common';
-import {ContentStoreService, VectorStoreService} from '@app/knowledge-base';
-import type {EmbeddingVector} from '@app/shared-interfaces';
+import { Injectable, Logger } from '@nestjs/common';
+import { ContentStoreService, VectorStoreService } from '@app/knowledge-base';
+import type { EmbeddingVector } from '@app/shared-interfaces';
+
+/**
+ * Represents a retrieved document chunk with its metadata.
+ */
+export interface RetrievedChunk {
+  /** Unique identifier (typically the file path) */
+  id: string;
+  /** Full content of the document */
+  content: string;
+  /** Repository identifier this content belongs to */
+  repoId?: string | null;
+  /** Additional metadata (custom meta from ingestion) */
+  metadata?: Record<string, unknown> | null;
+}
 
 /**
  * ParentChildRetrieverService
@@ -25,81 +39,108 @@ import type {EmbeddingVector} from '@app/shared-interfaces';
  * // 2. Embed your query
  * const [queryVector] = await this.embeddings.embedDocuments(['your query']);
  *
- * // 3. Retrieve parent documents
+ * // 3. Retrieve parent documents (optionally with filters)
  * const results = await this.retriever.retrieve(queryVector, 5);
+ * const filtered = await this.retriever.retrieve(queryVector, 5, { repoId: 'my-repo' });
  * ```
  */
 @Injectable()
 export class ParentChildRetrieverService {
-    private readonly logger = new Logger(ParentChildRetrieverService.name);
+  private readonly logger = new Logger(ParentChildRetrieverService.name);
 
-    constructor(
-        private vectorStore: VectorStoreService,
-        private contentStore: ContentStoreService,
-    ) {
+  constructor(
+    private vectorStore: VectorStoreService,
+    private contentStore: ContentStoreService,
+  ) {}
+
+  /**
+   * Retrieves the FULL context for a query by matching small chunks first.
+   *
+   * @param queryVector - Pre-computed embedding vector for the query
+   * @param k - Number of top results to return (default: 5)
+   * @param metadataFilters - Optional metadata filters to narrow results (e.g., { repoId: 'my-repo', team: 'backend' })
+   * @returns Array of retrieved chunks with id, content, repoId, and metadata
+   *
+   * @example
+   * ```typescript
+   * // Without filters
+   * const results = await retriever.retrieve(queryVector, 5);
+   * // Returns: [{ id: 'src/auth.ts', content: '...', repoId: 'my-repo', metadata: {...} }]
+   *
+   * // With filters (filter by repository and custom meta)
+   * const filtered = await retriever.retrieve(queryVector, 5, {
+   *   repoId: 'my-repo',
+   *   team: 'backend'
+   * });
+   * ```
+   */
+  async retrieve(
+    queryVector: EmbeddingVector,
+    k: number = 5,
+    metadataFilters?: Record<string, string | number | boolean>,
+  ): Promise<RetrievedChunk[]> {
+    const hasFilters =
+      metadataFilters && Object.keys(metadataFilters).length > 0;
+
+    if (hasFilters) {
+      this.logger.debug(
+        `Retrieving with filters: ${JSON.stringify(metadataFilters)}`,
+      );
     }
 
-    /**
-     * Retrieves the FULL context for a query by matching small chunks first.
-     *
-     * @param queryVector - Pre-computed embedding vector for the query
-     * @param k - Number of top results to return (default: 5)
-     * @returns Array of parent document contents
-     */
-    async retrieve(
-        queryVector: EmbeddingVector,
-        k: number = 5,
-    ): Promise<string[]> {
-        // 1. Use provided query vector
+    // 1. Search for CHILDREN (Small, precise chunks)
+    // We fetch k * 3 because multiple children might point to the SAME parent.
+    // We want to ensure we get enough unique parents.
+    const childResults = await this.vectorStore.similaritySearch(
+      queryVector,
+      k * 3,
+      metadataFilters,
+    );
 
-        // 2. Search for CHILDREN (Small, precise chunks)
-        // We fetch k * 3 because multiple children might point to the SAME parent.
-        // We want to ensure we get enough unique parents.
-        const childResults = await this.vectorStore.similaritySearch(
-            queryVector,
-            k * 3,
-        );
+    // 2. Extract Unique Parent IDs
+    const parentIds = new Set<string>();
+    const orphanChunks: RetrievedChunk[] = [];
 
-        // 3. Extract Unique Parent IDs
-        const parentIds = new Set<string>();
-        const childMatches: string[] = [];
-
-        for (const res of childResults) {
-            const pid = res.metadata.parentId;
-            if (pid) {
-                parentIds.add(String(pid));
-            } else {
-                if (!res.content) {
-                    this.logger.warn(
-                        `Child ${res.id} has no parent or content. Skipping...`,
-                    );
-                    continue;
-                }
-                // Fallback: If no parent (maybe older data), just use the child content
-                childMatches.push(res.content);
-            }
-
-            // Optimization: Stop if we have enough unique parents
-            if (parentIds.size >= k) break;
+    for (const res of childResults) {
+      const pid = res.metadata.parentId;
+      if (pid) {
+        parentIds.add(String(pid));
+      } else {
+        if (!res.content) {
+          this.logger.warn(
+            `Child ${res.id} has no parent or content. Skipping...`,
+          );
+          continue;
         }
+        // Fallback: If no parent (maybe older data), use the child content
+        orphanChunks.push({
+          id: res.id,
+          content: res.content,
+          repoId: res.metadata.repoId as string | undefined,
+          metadata: res.metadata as Record<string, unknown>,
+        });
+      }
 
-        // 4. Fetch PARENTS (Full Context)
-        if (parentIds.size > 0) {
-            const parents = await this.contentStore.getParents(Array.from(parentIds));
-
-            this.logger.log(
-                `Swapped ${childResults.length} chunks for ${parents.length} parent files.`,
-            );
-
-            return parents.map(
-                (p) => `
-        === FILE: ${p.id} ===
-        ${p.content}
-        =====================
-      `,
-            );
-        }
-
-        return childMatches;
+      // Optimization: Stop if we have enough unique parents
+      if (parentIds.size >= k) break;
     }
+
+    // 3. Fetch PARENTS (Full Context)
+    if (parentIds.size > 0) {
+      const parents = await this.contentStore.getParents(Array.from(parentIds));
+
+      this.logger.log(
+        `Swapped ${childResults.length} chunks for ${parents.length} parent files.`,
+      );
+
+      return parents.map((p) => ({
+        id: p.id,
+        content: p.content,
+        repoId: p.repoId,
+        metadata: p.metadata,
+      }));
+    }
+
+    return orphanChunks;
+  }
 }

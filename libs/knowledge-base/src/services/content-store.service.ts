@@ -3,6 +3,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { ContentBlobEntity } from '../entities';
 
+/**
+ * Service for storing and retrieving parent document content.
+ * Used by the parent-child retrieval strategy where chunks point back to full files.
+ */
 @Injectable()
 export class ContentStoreService {
   private readonly logger = new Logger(ContentStoreService.name);
@@ -12,12 +16,46 @@ export class ContentStoreService {
     private repo: Repository<ContentBlobEntity>,
   ) {}
 
-  async saveParent(id: string, content: string, metadata: any) {
+  /**
+   * Save a parent document (full file content) to the content store.
+   *
+   * @param id - Unique identifier, typically the file path (e.g., "src/auth/auth.service.ts")
+   * @param content - Full file content as string
+   * @param repoId - Repository identifier for filtering (auto-deduced from URL or provided)
+   * @param metadata - Optional additional metadata (custom meta from ingestion)
+   *
+   * @throws Error if save operation fails
+   *
+   * @example
+   * ```typescript
+   * await contentStore.saveParent(
+   *   'src/app.ts',
+   *   fileContent,
+   *   'my-repo',
+   *   { team: 'backend', project: 'api' }
+   * );
+   * ```
+   */
+  async saveParent(
+    id: string,
+    content: string,
+    repoId: string,
+    metadata?: Record<string, any>,
+  ): Promise<void> {
     try {
       // Sanitize content before saving to PostgreSQL
       const sanitizedContent = this.sanitizeContent(content, id);
 
-      await this.repo.save({ id, content: sanitizedContent, metadata });
+      await this.repo.save({
+        id,
+        content: sanitizedContent,
+        repoId,
+        metadata: metadata || {},
+      });
+
+      this.logger.debug(
+        `Saved parent content for ${id} (repoId: ${repoId}, size: ${sanitizedContent.length} chars)`,
+      );
     } catch (error) {
       this.logger.error(
         `Failed to save parent content for ${id}: ${error.message}`,

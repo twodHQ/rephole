@@ -25,6 +25,7 @@ Unlike traditional code search tools, Rephole understands **semantic relationshi
 - **🐳 One-Click Deployment** - Docker Compose setup in under 5 minutes
 - **🔒 Self-Hostable** - Keep your code private with on-premise deployment
 - **⚡ Parent-Child Retrieval** - Smart chunking returns full file context
+- **🏷️ Metadata Filtering** - Tag repositories with custom metadata and filter searches
 
 ---
 
@@ -73,12 +74,13 @@ curl -X POST http://localhost:3000/ingestions/repository \
     "ref": "master"
   }'
 
-# Response: Job queued
+# Response: Job queued (repoId auto-deduced from URL)
 {
   "status": "queued",
   "jobId": "01HQZX3Y4Z5A6B7C8D9E0F1G2H",
   "repoUrl": "https://github.com/nestjs/nest.git",
-  "ref": "master"
+  "ref": "master",
+  "repoId": "nest"
 }
 
 # 2. Check ingestion status
@@ -96,17 +98,23 @@ curl http://localhost:3000/jobs/job/01HQZX3Y4Z5A6B7C8D9E0F1G2H
 }
 
 # 3. Search your codebase (once completed)
-curl -X POST http://localhost:3000/queries/search \
+#    Note: repoId is required in the URL path
+curl -X POST http://localhost:3000/queries/search/nest \
   -H "Content-Type: application/json" \
   -d '{
     "prompt": "How do I create a custom decorator?",
     "k": 5
   }'
 
-# Response: Relevant code chunks with full file context
+# Response: Array of matching chunks with metadata
 {
   "results": [
-    "\n        === FILE: 01HQZX3Y4Z5A6B7C8D9E0F1G2H ===\n        export function CustomDecorator() { ... }\n        =====================\n      "
+    {
+      "id": "packages/common/decorators/custom.decorator.ts",
+      "content": "export function CustomDecorator() {\n  return (target: any) => { ... }\n}",
+      "repoId": "nest",
+      "metadata": { "category": "repository" }
+    }
   ]
 }
 ```
@@ -141,6 +149,42 @@ When you query:
 - Your question is embedded using the same model
 - Semantic search finds relevant code chunks
 - Return top matches chunks
+
+### Metadata Filtering
+
+Rephole supports custom metadata for organizing and filtering your codebase:
+
+**During Ingestion:**
+```json
+{
+  "repoUrl": "https://github.com/org/backend-api.git",
+  "meta": {
+    "team": "platform",
+    "environment": "production",
+    "version": "2.0"
+  }
+}
+```
+
+**During Search:**
+```bash
+# repoId is required in the URL path
+POST /queries/search/backend-api
+
+# Additional filters go in the request body
+{
+  "prompt": "How does caching work?",
+  "meta": {
+    "team": "platform"
+  }
+}
+```
+
+**Use Cases:**
+- 🏢 **Multi-team organizations**: Filter by team ownership
+- 🌍 **Multi-environment**: Separate staging/production code
+- 📦 **Microservices**: Search within specific services
+- 🏷️ **Project tagging**: Organize by project or domain
 
 ---
 
@@ -178,8 +222,13 @@ POST /ingestions/repository
   "repoUrl": "https://github.com/username/repo.git",
   "ref": "main",           // Optional: branch/tag/commit (default: main)
   "token": "ghp_xxx",      // Optional: for private repos
-  "userId": "user-123",   // Optional: for tracking
-  "repoId": "my-repo"     // Optional: custom identifier
+  "userId": "user-123",    // Optional: for tracking
+  "repoId": "my-repo",     // Optional: auto-deduced from URL if not provided
+  "meta": {                // Optional: custom metadata for filtering
+    "team": "backend",
+    "project": "api",
+    "environment": "production"
+  }
 }
 ```
 
@@ -189,9 +238,16 @@ POST /ingestions/repository
   "status": "queued",
   "jobId": "01HQZX3Y4Z5A6B7C8D9E0F1G2H",
   "repoUrl": "https://github.com/username/repo.git",
-  "ref": "main"
+  "ref": "main",
+  "repoId": "repo"         // Auto-deduced or provided repoId
 }
 ```
+
+**Notes:**
+- `repoId` is automatically extracted from the repository URL if not provided
+  - `https://github.com/org/my-repo.git` → `repoId: "my-repo"`
+- `meta` fields are attached to all chunks during ingestion
+- Only flat key-value pairs allowed (string, number, boolean values)
 
 ---
 
@@ -217,14 +273,22 @@ GET /jobs/job/:jobId
 
 #### 4. Search Code (Semantic)
 ```http
-POST /queries/search
+POST /queries/search/:repoId
 ```
+
+**Path Parameters:**
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `repoId` | ✅ Yes | Repository identifier to search within |
 
 **Request Body:**
 ```json
 {
   "prompt": "How does authentication work?",
-  "k": 5  // Optional: number of results (default: 5, max: 100)
+  "k": 5,              // Optional: number of results (default: 5, max: 100)
+  "meta": {            // Optional: additional metadata filters
+    "team": "backend"
+  }
 }
 ```
 
@@ -232,15 +296,68 @@ POST /queries/search
 ```json
 {
   "results": [
-    "\n        === FILE: 01HQZX... ===\n        [Full file content with relevant code]\n        =====================\n      "
+    {
+      "id": "src/auth/auth.service.ts",
+      "content": "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AuthService {\n  // Full file content...\n}",
+      "repoId": "my-repo",
+      "metadata": {
+        "team": "backend",
+        "category": "repository"
+      }
+    },
+    {
+      "id": "src/auth/guards/jwt.guard.ts",
+      "content": "export class JwtAuthGuard extends AuthGuard('jwt') {\n  // ...\n}",
+      "repoId": "my-repo",
+      "metadata": {
+        "team": "backend",
+        "category": "repository"
+      }
+    }
   ]
 }
 ```
 
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | File path (e.g., `src/auth/auth.service.ts`) |
+| `content` | string | Full file content |
+| `repoId` | string | Repository identifier |
+| `metadata` | object | Custom metadata from ingestion |
+
 **Notes:**
+- **`repoId` is required** in the URL path - you must specify which repository to search
 - Uses parent-child retrieval: searches small chunks, returns full parent documents
 - The `k` parameter is multiplied by 3 internally for child chunk search
-- Returns formatted strings with file context
+- Returns structured chunk objects with metadata
+- **Additional Filtering:**
+  - Use `meta` in request body for additional filters (team, environment, etc.)
+  - Multiple filters are combined with AND logic
+  
+**Example: Basic search within a repository:**
+```bash
+curl -X POST http://localhost:3000/queries/search/auth-service \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "How do JWT tokens work?",
+    "k": 10
+  }'
+```
+
+**Example: Search with additional metadata filters:**
+```bash
+curl -X POST http://localhost:3000/queries/search/backend-api \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Database connection pooling",
+    "k": 5,
+    "meta": { 
+      "team": "platform",
+      "environment": "production"
+    }
+  }'
+```
 
 ---
 

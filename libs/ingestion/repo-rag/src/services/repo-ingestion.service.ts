@@ -22,7 +22,8 @@ export class RepoIngestionService {
    * @param params.ref - Branch, tag, or commit SHA (defaults to 'main')
    * @param params.token - Personal access token for private repositories
    * @param params.userId - User ID who triggered the ingestion
-   * @param params.repoId - Custom identifier for tracking
+   * @param params.repoId - Custom identifier for tracking (auto-deduced from URL if not provided)
+   * @param params.meta - Optional key-value metadata to attach to all chunks
    * @returns Job status and ID
    * @throws {BadRequestException} When repository URL is invalid or queue operation fails
    */
@@ -32,13 +33,14 @@ export class RepoIngestionService {
     token?: string;
     userId?: string;
     repoId?: string;
+    meta?: Record<string, string | number | boolean>;
   }): Promise<{
     status: string;
     jobId: string;
     repoUrl: string;
     ref?: string;
   }> {
-    const { repoUrl, ref = 'main', token, userId, repoId } = params;
+    const { repoUrl, ref = 'main', token, userId, repoId, meta } = params;
 
     // Validate repository URL format
     if (!this.isValidGitUrl(repoUrl)) {
@@ -62,6 +64,7 @@ export class RepoIngestionService {
           token,
           userId,
           repoId,
+          meta: meta || {},
           queuedAt: new Date().toISOString(),
         },
         {
