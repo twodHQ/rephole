@@ -251,7 +251,10 @@ describe('ParentChildRetrieverService', () => {
       const results = await service.retrieveChunks(queryVector, 5);
 
       expect(results[0].repoId).toBe('test-repo');
-      expect(results[0].metadata).toEqual({ repoId: 'test-repo', team: 'frontend' });
+      expect(results[0].metadata).toEqual({
+        repoId: 'test-repo',
+        team: 'frontend',
+      });
     });
   });
 });
