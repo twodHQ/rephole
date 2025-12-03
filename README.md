@@ -585,37 +585,6 @@ sequenceDiagram
     A->>C: Return formatted results
 ```
 
-### Scaling Strategy
-
-**Horizontal Scaling:**
-
-```mermaid
-graph LR
-    LB[Load Balancer] --> A1[API Instance 1]
-    LB --> A2[API Instance 2]
-    LB --> A3[API Instance 3]
-    
-    A1 --> Q[Redis Queue]
-    A2 --> Q
-    A3 --> Q
-    
-    Q --> W1[Worker Instance 1]
-    Q --> W2[Worker Instance 2]
-    Q --> W3[Worker Instance 3]
-    
-    style A1 fill:#e3f2fd
-    style A2 fill:#e3f2fd
-    style A3 fill:#e3f2fd
-    style W1 fill:#fff3e0
-    style W2 fill:#fff3e0
-    style W3 fill:#fff3e0
-```
-
-**Scale API:** Based on HTTP traffic
-```bash
-docker-compose up --scale api=3
-```
-
 **Scale Worker:** Based on queue length
 ```bash
 docker-compose up --scale worker=5
@@ -639,6 +608,128 @@ docker-compose up --scale worker=5
 **Infrastructure:**
 - Docker & Docker Compose
 - pnpm (Package Manager)
+
+---
+
+## 🌐 Supported Languages
+
+Rephole uses **tree-sitter** for intelligent AST-based code chunking. The following **37 programming languages** are supported:
+
+### Core Languages
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **TypeScript** | `.ts`, `.mts`, `.cts` | ✅ Full support |
+| **TSX** | `.tsx` | ✅ Full support |
+| **JavaScript** | `.js`, `.jsx`, `.mjs`, `.cjs` | ✅ Full support |
+| **Python** | `.py`, `.pyw`, `.pyi` | ✅ Full support |
+| **Java** | `.java` | ✅ Full support |
+| **Kotlin** | `.kt`, `.kts` | ✅ Full support |
+| **Scala** | `.scala`, `.sc` | ✅ Full support |
+
+### Systems Programming
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **C** | `.c`, `.h` | ✅ Full support |
+| **C++** | `.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hxx`, `.h++`, `.hh` | ✅ Full support |
+| **C#** | `.cs` | ✅ Full support |
+| **Objective-C** | `.m`, `.mm` | ✅ Full support |
+| **Go** | `.go` | ✅ Full support |
+| **Rust** | `.rs` | ✅ Full support |
+| **Zig** | `.zig` | ✅ Full support |
+
+### Mobile Development
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **Swift** | `.swift` | ✅ Full support |
+| **Dart** | `.dart` | ✅ Full support |
+
+### Scripting Languages
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **Ruby** | `.rb`, `.rake`, `.gemspec` | ✅ Full support |
+| **PHP** | `.php`, `.phtml` | ✅ Full support |
+| **Lua** | `.lua` | ✅ Full support |
+| **Elixir** | `.ex`, `.exs` | ✅ Full support |
+
+### Functional Languages
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **OCaml** | `.ml`, `.mli` | ✅ Full support |
+| **ReScript** | `.res`, `.resi` | ✅ Full support |
+
+### Web3 / Blockchain
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **Solidity** | `.sol` | ✅ Full support |
+
+### Web Technologies
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **HTML** | `.html`, `.htm`, `.xhtml` | ✅ Full support |
+| **CSS** | `.css` | ✅ Full support |
+| **Vue** | `.vue` | ✅ Full support |
+| **ERB/EJS** | `.erb`, `.ejs`, `.eta` | ✅ Full support |
+
+### Config / Data Languages
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **JSON** | `.json`, `.jsonc` | ✅ Full support |
+| **YAML** | `.yml`, `.yaml` | ✅ Full support |
+| **TOML** | `.toml` | ✅ Full support |
+| **Markdown** | `.md`, `.markdown`, `.mdx` | ✅ Full support |
+
+### Shell & Scripting
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **Bash/Shell** | `.sh`, `.bash`, `.zsh`, `.fish` | ✅ Full support |
+| **Emacs Lisp** | `.el`, `.elc` | ✅ Full support |
+
+### Formal Methods & Verification
+
+| Language | Extensions | AST Parsing |
+|----------|-------|-------------|
+| **TLA+** | `.tla` | ✅ Full support |
+| **CodeQL** | `.ql` | ✅ Full support |
+
+### Hardware Description
+
+| Language | Extensions | AST Parsing |
+|----------|------------|-------------|
+| **SystemRDL** | `.rdl` | ✅ Full support |
+
+### How Language Detection Works
+
+The AST parser automatically detects the programming language based on file extension:
+
+1. **File Extension Detection**: When processing a file, Rephole extracts the file extension
+2. **Grammar Loading**: The appropriate tree-sitter WASM grammar is loaded
+3. **AST Parsing**: The code is parsed into an Abstract Syntax Tree
+4. **Semantic Chunking**: Functions, classes, methods, and other semantic blocks are extracted
+5. **Embedding**: Each chunk is embedded separately for precise retrieval
+
+### Adding New Languages
+
+To add support for a new language:
+
+1. Add the tree-sitter WASM grammar file to `resources/`
+2. Create a query in `libs/ingestion/ast-parser/src/constants/queries.ts`
+3. Add the language config in `libs/ingestion/ast-parser/src/config/language-config.ts`
+
+### Unsupported Files
+
+Files with unsupported extensions are gracefully skipped during ingestion. The system will:
+- Log a debug message about the unsupported extension
+- Continue processing other files
+- Return an empty array for that file's chunks
 
 ---
 
@@ -823,43 +914,4 @@ volumes:
   postgres_data:
   redis_data:
   chroma_data:
-```
-
-### Monitoring
-
-**Check Queue Status:**
-
-```bash
-# Connect to Redis
-docker exec -it <redis-container> redis-cli
-
-# View queue statistics
-KEYS bull:repo-ingestion:*
-LLEN bull:repo-ingestion:waiting
-LLEN bull:repo-ingestion:active
-LLEN bull:repo-ingestion:completed
-LLEN bull:repo-ingestion:failed
-```
-
-**View Worker Logs:**
-
-```bash
-# Follow worker logs
-docker-compose logs -f worker
-
-# Should see:
-# [RepoUpdateProcessor] Starting repo ingestion job xxx
-# [RepoUpdateProcessor] Processing 123 files
-# [RepoUpdateProcessor] ✅ Completed in 45s
-```
-
-**API Health Check:**
-
-```bash
-curl http://localhost:3000/health
-
-# Response:
-{
-  "status": "ok"
-}
 ```

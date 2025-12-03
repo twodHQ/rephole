@@ -3,52 +3,223 @@ import {
   Language,
   type Node as SyntaxNode,
   Parser,
+  Query,
   type QueryCapture,
+  type Tree,
 } from 'web-tree-sitter';
 import * as path from 'node:path';
-import { TYPESCRIPT_QUERY } from '../constants/queries';
+import {
+  LANGUAGE_CONFIGS,
+  getConfigByExtension,
+  getWasmPath,
+  type LanguageConfig,
+} from '../config';
 
+/**
+ * Represents a semantic code chunk extracted from source code.
+ */
 export interface CodeChunk {
-  id: string; // Format: "filePath:name:nodeType:L{line}" e.g., "auth.service.ts:login:method_definition:L45"
-  type: string; // Node type: "method_definition", "get_accessor", "set_accessor", "class_declaration", etc.
-  content: string; // The code snippet
+  /** Unique identifier in format: "filePath:name:nodeType:L{line}" */
+  id: string;
+  /** AST node type: "method_definition", "class_declaration", "function_definition", etc. */
+  type: string;
+  /** The actual code snippet */
+  content: string;
+  /** One-indexed start line number */
   startLine: number;
+  /** One-indexed end line number */
   endLine: number;
 }
 
+/**
+ * Loaded language data containing the tree-sitter Language and its associated query.
+ */
+interface LoadedLanguage {
+  language: Language;
+  query: string;
+  config: LanguageConfig;
+}
+
+/**
+ * Service for parsing source code and extracting semantic chunks using tree-sitter.
+ * Supports multiple programming languages based on file extension.
+ */
 @Injectable()
 export class AstSplitterService implements OnModuleInit {
   private parser!: Parser;
-  private tsLanguage!: Language;
   private readonly logger = new Logger(AstSplitterService.name);
 
+  /**
+   * Map of file extensions to loaded Language instances.
+   * Pre-populated during module initialization for O(1) lookup.
+   */
+  private readonly languageMap = new Map<string, LoadedLanguage>();
+
+  /**
+   * Track which languages failed to load for debugging purposes.
+   */
+  private readonly failedLanguages = new Set<string>();
+
+  /**
+   * Initialize the tree-sitter parser and load all supported language grammars.
+   */
   async onModuleInit() {
-    this.logger.debug('Initializing Tree-Sitter Parser...');
+    this.logger.log('Initializing Tree-Sitter Parser...');
     await Parser.init();
     this.logger.debug('Parser.init() completed');
 
-    // Load WASM grammar (Ensure these files exist in your build!)
-    const wasmPath = path.resolve(
-      process.cwd(),
-      'resources/tree-sitter-typescript.wasm',
-    );
-    this.logger.debug(`Loading TypeScript grammar from: ${wasmPath}`);
-    this.tsLanguage = await Language.load(wasmPath);
-    this.logger.debug('TypeScript grammar loaded successfully');
-
+    // Create the shared parser instance
     this.parser = new Parser();
-    this.parser.setLanguage(this.tsLanguage);
-    this.logger.debug('Tree-Sitter Parser initialized and language set');
+    let successCount = 0;
+    let failCount = 0;
+
+    for (const config of LANGUAGE_CONFIGS) {
+      try {
+        await this.loadLanguageGrammar(config);
+        successCount++;
+      } catch (error) {
+        this.logger.error(
+          `Failed to load language ${config.language}: ${error instanceof Error ? error.message : String(error)}`,
+        );
+        this.failedLanguages.add(config.language);
+        failCount++;
+      }
+    }
+
+    this.logger.log(
+      `Tree-Sitter initialization complete: ${successCount} languages loaded, ${failCount} failed`,
+    );
+
+    if (this.languageMap.size === 0) {
+      this.logger.error(
+        'No languages were loaded! AST splitting will not work.',
+      );
+    }
+
+    // Log supported extensions
+    this.logger.debug(
+      `Supported extensions: ${Array.from(this.languageMap.keys()).join(', ')}`,
+    );
   }
 
   /**
-   * Smartly splits code into semantic chunks
+   * Load a single language grammar from WASM file.
+   * Registers all extensions for the language in the languageMap.
+   */
+  private async loadLanguageGrammar(config: LanguageConfig): Promise<void> {
+    const wasmPath = getWasmPath(config.wasmFile);
+
+    this.logger.debug(`Loading ${config.language}`);
+    const language = await Language.load(wasmPath);
+
+    // Register all extensions for this language
+    for (const ext of config.extensions) {
+      const normalizedExt = ext.toLowerCase();
+
+      // Skip if already registered (shouldn't happen with our config, but be safe)
+      if (this.languageMap.has(normalizedExt)) {
+        this.logger.debug(
+          `Extension ${normalizedExt} already registered, skipping`,
+        );
+        continue;
+      }
+
+      this.languageMap.set(normalizedExt, {
+        language,
+        query: config.query,
+        config,
+      });
+    }
+
+    this.logger.debug(
+      `${config.language} grammar loaded successfully (${config.extensions.join(', ')})`,
+    );
+  }
+
+  /**
+   * Get the loaded language data for a file extension.
+   *
+   * @param extension - File extension including dot (e.g., '.ts')
+   * @returns LoadedLanguage if available, undefined otherwise
+   */
+  private getLoadedLanguage(extension: string): LoadedLanguage | undefined {
+    return this.languageMap.get(extension.toLowerCase());
+  }
+
+  /**
+   * Check if a file extension is supported and its grammar is loaded.
+   *
+   * @param extension - File extension to check
+   * @returns true if the extension is supported and ready
+   */
+  isLanguageSupported(extension: string): boolean {
+    return this.languageMap.has(extension.toLowerCase());
+  }
+
+  /**
+   * Get list of all supported file extensions.
+   */
+  getSupportedExtensions(): string[] {
+    return Array.from(this.languageMap.keys());
+  }
+
+  /**
+   * Smartly splits source code into semantic chunks based on AST analysis.
+   * Automatically detects the language from file extension.
+   *
+   * @param fileName - File path (used for extension detection and chunk IDs)
+   * @param content - Source code content to parse
+   * @returns Array of CodeChunk objects, empty array if parsing fails or extension unsupported
    */
   split(fileName: string, content: string): CodeChunk[] {
+    // Extract file extension
+    const ext = path.extname(fileName).toLowerCase();
+
+    if (!ext) {
+      this.logger.warn(`No file extension found for: ${fileName}`);
+      return [];
+    }
+
+    // Get the loaded language for this extension
+    const loadedLang = this.getLoadedLanguage(ext);
+
+    if (!loadedLang) {
+      // Check if it's a known but failed language
+      const config = getConfigByExtension(ext);
+      if (config && this.failedLanguages.has(config.language)) {
+        this.logger.warn(
+          `Language ${config.language} failed to load, cannot parse ${fileName}`,
+        );
+      } else if (!config) {
+        this.logger.debug(`Unsupported file extension: ${ext} (${fileName})`);
+      }
+      return [];
+    }
+
     this.logger.debug(
-      `Splitting file: ${fileName} (${content.length} characters)`,
+      `Splitting file: ${fileName} (${content.length} chars, language: ${loadedLang.config.language})`,
     );
-    const tree = this.parser.parse(content);
+
+    // Set the parser language for this file
+    try {
+      this.parser.setLanguage(loadedLang.language);
+    } catch (error) {
+      this.logger.error(
+        `Failed to set parser language for ${loadedLang.config.language}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return [];
+    }
+
+    // Parse the content
+    let tree: Tree | null;
+    try {
+      tree = this.parser.parse(content);
+    } catch (error) {
+      this.logger.error(
+        `Parser error for ${fileName}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return [];
+    }
 
     if (!tree) {
       this.logger.warn(`Failed to parse ${fileName}`);
@@ -59,16 +230,28 @@ export class AstSplitterService implements OnModuleInit {
       `Parsed syntax tree with ${tree.rootNode.childCount} top-level nodes`,
     );
 
-    const query = this.tsLanguage.query(TYPESCRIPT_QUERY);
-    this.logger.debug('TypeScript query created');
+    // Compile and run the query
+    let query: Query;
+    try {
+      query = new Query(loadedLang.language, loadedLang.query);
+    } catch (error) {
+      this.logger.error(
+        `Query compilation error for ${loadedLang.config.language}: ${error instanceof Error ? error.message : String(error)}`,
+      );
+      return [];
+    }
 
-    // 1. Run the query to find all "blocks" (functions, classes)
-    const captures = query.captures(tree.rootNode);
+    this.logger.debug(`${loadedLang.config.language} query compiled`);
+
+    // Run the query to find all "blocks" (functions, classes, etc.)
+    const captures: QueryCapture[] = query.captures(tree.rootNode);
     this.logger.debug(`Found ${captures.length} total captures`);
 
     const chunks: CodeChunk[] = [];
 
-    const blockCaptures = captures.filter((c) => c.name === 'block');
+    const blockCaptures = captures.filter(
+      (c: QueryCapture) => c.name === 'block',
+    );
     this.logger.debug(
       `Processing ${blockCaptures.length} block captures for ${fileName}`,
     );
@@ -76,34 +259,25 @@ export class AstSplitterService implements OnModuleInit {
     for (const capture of captures) {
       if (capture.name !== 'block') continue;
 
-      const node = capture.node;
+      const node: SyntaxNode = capture.node;
       this.logger.debug(
         `Processing ${node.type} at line ${node.startPosition.row + 1}`,
       );
 
-      // 2. Resolve the "Name" of this block (for Metadata)
-      // The query captures @name inside @block. We find the closest @name capture.
+      // Resolve the "Name" of this block (for Metadata)
       const nameNode = this.findNameNode(captures, node);
       const name = nameNode ? nameNode.text : 'anonymous';
       this.logger.debug(`Resolved block name: ${name} (type: ${node.type})`);
 
-      // 3. Context Expansion: Include Decorators & Comments
-      // Tree-sitter nodes usually start AT the keyword (e.g., 'class').
-      // We must check previous siblings for @Injectable() or JSDoc.
+      // Context Expansion: Include Decorators & Comments
       const { startNode, endNode } = this.expandContext(node);
-
-      // Create unique key to prevent overlap (e.g. Method inside Class)
-      // Strategy: If we are extracting methods, we might NOT want to extract the whole class
-      // as a duplicate. Or we extract the class *signature* only.
-      // For simplicity here, we extract everything but you might want logic to
-      // ignore a Class if you extracted its methods.
 
       const chunkContent = content.substring(
         startNode.startIndex,
         endNode.endIndex,
       );
 
-      // Generate unique ID using helper function
+      // Generate unique ID
       const chunkStartLine = startNode.startPosition.row + 1;
       const chunkEndLine = endNode.endPosition.row + 1;
       const chunkId = this.generateChunkId(
@@ -165,7 +339,9 @@ export class AstSplitterService implements OnModuleInit {
   }
 
   /**
-   * Helper: Find the previous comments/decorators
+   * Expand context to include preceding comments and decorators.
+   * Tree-sitter nodes usually start at the keyword (e.g., 'class').
+   * This method walks backwards to find @Injectable() decorators or JSDoc comments.
    */
   private expandContext(node: SyntaxNode): {
     startNode: SyntaxNode;
@@ -198,6 +374,10 @@ export class AstSplitterService implements OnModuleInit {
     return { startNode, endNode };
   }
 
+  /**
+   * Find the name node associated with a block capture.
+   * Looks for a @name capture that is a direct child of the block node.
+   */
   private findNameNode(
     captures: QueryCapture[],
     blockNode: SyntaxNode,
