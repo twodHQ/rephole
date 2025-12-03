@@ -436,7 +436,7 @@ curl -X POST http://localhost:3000/queries/search/auth-service/chunk \
 
 ---
 
-#### 7. Get Failed Jobs
+#### 6. Get Failed Jobs
 ```http
 GET /jobs/failed
 ```
@@ -456,7 +456,7 @@ GET /jobs/failed
 
 ---
 
-#### 8. Retry Failed Job
+#### 7. Retry Failed Job
 ```http
 POST /jobs/retry/:jobId
 ```
@@ -471,7 +471,7 @@ POST /jobs/retry/:jobId
 
 ---
 
-#### 9. Retry All Failed Jobs
+#### 8. Retry All Failed Jobs
 ```http
 POST /jobs/retry/all
 ```
