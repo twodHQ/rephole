@@ -585,37 +585,6 @@ sequenceDiagram
     A->>C: Return formatted results
 ```
 
-### Scaling Strategy
-
-**Horizontal Scaling:**
-
-```mermaid
-graph LR
-    LB[Load Balancer] --> A1[API Instance 1]
-    LB --> A2[API Instance 2]
-    LB --> A3[API Instance 3]
-    
-    A1 --> Q[Redis Queue]
-    A2 --> Q
-    A3 --> Q
-    
-    Q --> W1[Worker Instance 1]
-    Q --> W2[Worker Instance 2]
-    Q --> W3[Worker Instance 3]
-    
-    style A1 fill:#e3f2fd
-    style A2 fill:#e3f2fd
-    style A3 fill:#e3f2fd
-    style W1 fill:#fff3e0
-    style W2 fill:#fff3e0
-    style W3 fill:#fff3e0
-```
-
-**Scale API:** Based on HTTP traffic
-```bash
-docker-compose up --scale api=3
-```
-
 **Scale Worker:** Based on queue length
 ```bash
 docker-compose up --scale worker=5
@@ -663,7 +632,7 @@ Rephole uses **tree-sitter** for intelligent AST-based code chunking. The follow
 | Language | Extensions | AST Parsing |
 |----------|------------|-------------|
 | **C** | `.c`, `.h` | ✅ Full support |
-| **C++** | `.cpp`, `.cc`, `.cxx`, `.hpp`, `.hxx`, `.hh` | ✅ Full support |
+| **C++** | `.cpp`, `.cc`, `.cxx`, `.c++`, `.hpp`, `.hxx`, `.h++`, `.hh` | ✅ Full support |
 | **C#** | `.cs` | ✅ Full support |
 | **Objective-C** | `.m`, `.mm` | ✅ Full support |
 | **Go** | `.go` | ✅ Full support |
@@ -691,7 +660,6 @@ Rephole uses **tree-sitter** for intelligent AST-based code chunking. The follow
 | Language | Extensions | AST Parsing |
 |----------|------------|-------------|
 | **OCaml** | `.ml`, `.mli` | ✅ Full support |
-| **Elm** | `.elm` | ✅ Full support |
 | **ReScript** | `.res`, `.resi` | ✅ Full support |
 
 ### Web3 / Blockchain
@@ -728,9 +696,9 @@ Rephole uses **tree-sitter** for intelligent AST-based code chunking. The follow
 ### Formal Methods & Verification
 
 | Language | Extensions | AST Parsing |
-|----------|------------|-------------|
+|----------|-------|-------------|
 | **TLA+** | `.tla` | ✅ Full support |
-| **CodeQL** | `.ql`, `.qll` | ✅ Full support |
+| **CodeQL** | `.ql` | ✅ Full support |
 
 ### Hardware Description
 
@@ -946,43 +914,4 @@ volumes:
   postgres_data:
   redis_data:
   chroma_data:
-```
-
-### Monitoring
-
-**Check Queue Status:**
-
-```bash
-# Connect to Redis
-docker exec -it <redis-container> redis-cli
-
-# View queue statistics
-KEYS bull:repo-ingestion:*
-LLEN bull:repo-ingestion:waiting
-LLEN bull:repo-ingestion:active
-LLEN bull:repo-ingestion:completed
-LLEN bull:repo-ingestion:failed
-```
-
-**View Worker Logs:**
-
-```bash
-# Follow worker logs
-docker-compose logs -f worker
-
-# Should see:
-# [RepoUpdateProcessor] Starting repo ingestion job xxx
-# [RepoUpdateProcessor] Processing 123 files
-# [RepoUpdateProcessor] ✅ Completed in 45s
-```
-
-**API Health Check:**
-
-```bash
-curl http://localhost:3000/health
-
-# Response:
-{
-  "status": "ok"
-}
 ```
