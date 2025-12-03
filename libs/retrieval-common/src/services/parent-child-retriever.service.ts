@@ -143,4 +143,66 @@ export class ParentChildRetrieverService {
 
     return orphanChunks;
   }
+
+  /**
+   * Retrieves raw chunks directly from vector search without parent document lookup.
+   *
+   * Unlike `retrieve()` which returns parent documents (full files), this method
+   * returns the actual chunks that matched the semantic search. Useful when you
+   * need precise code snippets rather than full file context.
+   *
+   * @param queryVector - Pre-computed embedding vector for the query
+   * @param k - Number of top results to return (default: 5)
+   * @param metadataFilters - Optional metadata filters to narrow results (e.g., { repoId: 'my-repo', team: 'backend' })
+   * @returns Array of raw chunks with id, content, repoId, and metadata
+   *
+   * @example
+   * ```typescript
+   * // Retrieve raw chunks without parent lookup
+   * const chunks = await retriever.retrieveChunks(queryVector, 10);
+   * // Returns: [{ id: 'chunk-id', content: 'function auth() {...}', repoId: 'my-repo', metadata: {...} }]
+   *
+   * // With filters
+   * const filtered = await retriever.retrieveChunks(queryVector, 10, {
+   *   repoId: 'my-repo',
+   *   team: 'backend'
+   * });
+   * ```
+   */
+  async retrieveChunks(
+    queryVector: EmbeddingVector,
+    k: number = 5,
+    metadataFilters?: Record<string, string | number | boolean>,
+  ): Promise<RetrievedChunk[]> {
+    const hasFilters =
+      metadataFilters && Object.keys(metadataFilters).length > 0;
+
+    if (hasFilters) {
+      this.logger.debug(
+        `Retrieving chunks with filters: ${JSON.stringify(metadataFilters)}`,
+      );
+    }
+
+    // Search for chunks directly - no parent lookup needed
+    const chunkResults = await this.vectorStore.similaritySearch(
+      queryVector,
+      k,
+      metadataFilters,
+    );
+
+    this.logger.debug(
+      `Retrieved ${chunkResults.length} raw chunks` +
+        (hasFilters ? ` (filtered)` : ''),
+    );
+
+    // Map vector records to RetrievedChunk format, filtering out chunks without content
+    return chunkResults
+      .filter((chunk) => chunk.content)
+      .map((chunk) => ({
+        id: chunk.id,
+        content: chunk.content!,
+        repoId: chunk.metadata?.repoId as string | undefined,
+        metadata: chunk.metadata as Record<string, unknown>,
+      }));
+  }
 }

@@ -364,7 +364,79 @@ curl -X POST http://localhost:3000/queries/search/backend-api \
 
 ---
 
-#### 5. Get Failed Jobs
+#### 5. Search Code Chunks (Raw Chunks)
+```http
+POST /queries/search/:repoId/chunk
+```
+
+**Path Parameters:**
+| Parameter | Required | Description |
+|-----------|----------|-------------|
+| `repoId` | ✅ Yes | Repository identifier to search within |
+
+**Request Body:**
+```json
+{
+  "prompt": "How does authentication work?",
+  "k": 10,             // Optional: number of results (default: 5, max: 100)
+  "meta": {            // Optional: additional metadata filters
+    "team": "backend"
+  }
+}
+```
+
+**Response:**
+```json
+{
+  "results": [
+    {
+      "id": "chunk-abc123",
+      "content": "@Injectable()\nexport class AuthService {\n  validateUser(token: string) {\n    // validation logic\n  }\n}",
+      "repoId": "my-repo",
+      "metadata": {
+        "team": "backend",
+        "filePath": "src/auth/auth.service.ts"
+      }
+    }
+  ]
+}
+```
+
+**Response Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Chunk identifier |
+| `content` | string | **Raw chunk content** (code snippet, not full file) |
+| `repoId` | string | Repository identifier |
+| `metadata` | object | Custom metadata from ingestion |
+
+**Notes:**
+- **Key Difference:** Unlike `/queries/search/:repoId`, this endpoint returns **raw chunks** directly instead of parent documents (full files)
+- Useful when you need **precise code snippets** rather than full file context
+- The `k` parameter returns exactly `k` chunks (not multiplied internally)
+- No parent document lookup is performed - faster response times
+
+**Example: Get precise code snippets:**
+```bash
+curl -X POST http://localhost:3000/queries/search/auth-service/chunk \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "JWT token validation",
+    "k": 5
+  }'
+```
+
+**When to use each endpoint:**
+| Use Case | Endpoint |
+|----------|----------|
+| Need full file context | `POST /queries/search/:repoId` |
+| Need precise code snippets | `POST /queries/search/:repoId/chunk` |
+| Building code completion | `POST /queries/search/:repoId/chunk` |
+| Understanding file structure | `POST /queries/search/:repoId` |
+
+---
+
+#### 7. Get Failed Jobs
 ```http
 GET /jobs/failed
 ```
@@ -384,7 +456,7 @@ GET /jobs/failed
 
 ---
 
-#### 6. Retry Failed Job
+#### 8. Retry Failed Job
 ```http
 POST /jobs/retry/:jobId
 ```
@@ -399,7 +471,7 @@ POST /jobs/retry/:jobId
 
 ---
 
-#### 7. Retry All Failed Jobs
+#### 9. Retry All Failed Jobs
 ```http
 POST /jobs/retry/all
 ```
