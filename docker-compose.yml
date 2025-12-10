@@ -1,17 +1,51 @@
 version: '3.8'
 
 services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: rephole-api
+    ports:
+      - '3000:3000'
+    environment:
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - CHROMA_COLLECTION_NAME=rephole-collection
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LOG_LEVEL=info
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      chromadb:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:3000/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
   redis:
     image: redis:7-alpine
     container_name: rephole-redis
     ports:
-      - "6379:6379"
+      - '6379:6379'
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -20,7 +54,7 @@ services:
     image: chromadb/chroma:latest
     container_name: rephole-chromadb
     ports:
-      - "8000:8000"
+      - '8000:8000'
     volumes:
       - chromadb_data:/chroma/chroma
     environment:
@@ -29,7 +63,7 @@ services:
       - PERSIST_DIRECTORY=/chroma/chroma
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/v1/heartbeat" ]
+      test: ['CMD', 'curl', '-f', 'http://localhost:8000/api/v1/heartbeat']
       interval: 30s
       timeout: 10s
       retries: 3
@@ -38,7 +72,7 @@ services:
     image: postgres:15-alpine
     container_name: rephole-postgres
     ports:
-      - "5432:5432"
+      - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     environment:
@@ -47,7 +81,7 @@ services:
       - POSTGRES_DB=postgres
     restart: unless-stopped
     healthcheck:
-      test: [ "CMD", "pg_isready", "-U", "postgres" ]
+      test: ['CMD', 'pg_isready', '-U', 'postgres']
       interval: 30s
       timeout: 10s
       retries: 3

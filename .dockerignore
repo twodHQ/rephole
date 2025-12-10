@@ -1,0 +1,43 @@
+# Dependencies (will be installed fresh in container)
+node_modules
+.pnpm-store
+
+# Build output (will be built fresh in container)
+dist
+
+# Git
+.git
+.gitignore
+
+# Environment files (should not be baked into image)
+.env
+.env.*
+!.env.example
+
+# IDE and OS
+.idea
+.vscode
+*.swp
+*.swo
+.DS_Store
+
+# Cloned repositories (large, not needed for build)
+repos/
+
+# Test and coverage
+coverage
+.nyc_output
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Docker files (not needed inside container)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# Misc
+LICENSE
+*.md
