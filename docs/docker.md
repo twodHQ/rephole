@@ -45,14 +45,14 @@ docker compose up -d postgres redis chromadb
 docker run --rm \
   --network rephole-network \
   -p 3000:3000 \
-  -e POSTGRES_HOST=rephole-postgres \
+  -e POSTGRES_HOST=postgres \
   -e POSTGRES_PORT=5432 \
   -e POSTGRES_USER=postgres \
   -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=postgres \
-  -e REDIS_HOST=rephole-redis \
+  -e REDIS_HOST=redis \
   -e REDIS_PORT=6379 \
-  -e CHROMA_HOST=rephole-chromadb \
+  -e CHROMA_HOST=chromadb \
   -e CHROMA_PORT=8000 \
   -e OPENAI_API_KEY=your-api-key \
   rephole-api:dev
