@@ -1,4 +1,4 @@
-# Multi-stage Dockerfile for building and running the `api` NestJS app in this monorepo
+# Multi-stage Dockerfile for building and running the `background-worker` NestJS app in this monorepo
 
 # ============================================
 # Stage 1: Build
@@ -19,15 +19,16 @@ RUN corepack enable && corepack prepare pnpm@latest --activate
 # Copy package files first for better layer caching
 COPY package.json pnpm-lock.yaml ./
 
-# Install ALL dependencies (including devDependencies for build)
+# Install all dependencies without running lifecycle scripts
 RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy source code and config files
 COPY nest-cli.json tsconfig.json tsconfig.build.json ./
-COPY apps/api ./apps/api
+COPY apps/background-worker ./apps/background-worker
 COPY libs ./libs
+COPY resources ./resources
 
-RUN pnpm build:api && pnpm cache delete
+RUN pnpm build:worker && pnpm cache delete
 
 # ============================================
 # Stage 2: Production deps (node_modules with native bindings)
@@ -49,6 +50,7 @@ RUN pnpm install --frozen-lockfile --prod --ignore-scripts && pnpm cache delete
 # Stage 3: Production Runtime
 # ============================================
 
+## Runtime image
 FROM node:22-bookworm-slim AS runner
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
@@ -75,9 +77,5 @@ COPY --chown=app:app --from=builder /usr/src/app/dist ./dist
 
 USER app
 
-# Health check - verify the worker is listening on port 3002
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost:3002/health || exit 1
-
 # Run the built API app
-CMD ["node", "dist/apps/api/main.js"]
+CMD ["node", "dist/apps/background-worker/main.js"]
