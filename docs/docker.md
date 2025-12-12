@@ -73,6 +73,7 @@ The API container accepts the following environment variables:
 | `REDIS_PORT`        | Redis port               | `6379`      |
 | `CHROMA_HOST`       | ChromaDB hostname        | `localhost` |
 | `CHROMA_PORT`       | ChromaDB port            | `8000`      |
+| `CHROMA_COLLECTION_NAME` | ChromaDB collection name | `rephole-collection` |
 | `OPENAI_API_KEY`    | OpenAI API key           | (required)  |
 | `LOG_LEVEL`         | Logging level            | `info`      |
 
