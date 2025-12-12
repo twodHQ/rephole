@@ -20,6 +20,7 @@ RUN pnpm build:api
 
 ## Runtime image
 FROM node:20-slim AS runner
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/src/app
 ENV NODE_ENV=production
 
