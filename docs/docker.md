@@ -54,6 +54,7 @@ docker run --rm \
   -e REDIS_PORT=6379 \
   -e CHROMA_HOST=chromadb \
   -e CHROMA_PORT=8000 \
+  -e CHROMA_COLLECTION_NAME=rephole-collection \
   -e OPENAI_API_KEY=your-api-key \
   rephole-api:dev
 ```
